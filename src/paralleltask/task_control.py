@@ -20,12 +20,13 @@ log = plog()
 
 class Job(object):
 
-	def __init__(self, path):
+	def __init__(self, path, input_files=None):
 		self.path = os.path.abspath(path)
 		self.id = None
 		self.cmd = None
 		self.out = self.path + '.o'
 		self.err = self.path + '.e'
+		self.input_files = input_files
 
 	def is_finished(self):
 		return True if os.path.exists(self.path + '.done') else False
@@ -113,7 +114,7 @@ class Task(object):
 			log.error('Incorrect allocated task group:%s' % str(self.group))
 		return group_tasks
 
-	def _write_subtasks(self, tasks):
+	def _write_subtasks(self, tasks, input_files=None):
 
 		def get_time_exe():
 			if which('time'):
@@ -146,7 +147,7 @@ class Task(object):
 				with open(subtask_dir + '/' + subtask_file, 'w') as OUT:
 					print (subtask, file=OUT)
 					os.chmod(subtask_dir + '/' + subtask_file, 0o744)
-			jobs.append(Job(subtask_dir + '/' + subtask_file))
+			jobs.append(Job(subtask_dir + '/' + subtask_file, input_files=input_files))
 		return jobs
 
 	@property
@@ -250,7 +251,7 @@ class Run(object):
 	def submit(self, job):
 		assert 'script' in self._submit
 		job.cmd = self._submit.format(cpu=self.cpu, mem=self.mem, shell=self.shell, \
-			script=job.path, out=job.out, err=job.err)
+			script=job.path, out=job.out, err=job.err, input_files=job.input_files or '')
 		_, stdout, _ = self.run(job.cmd)
 		job.id = self.parse_id(stdout)
 		return job.id
