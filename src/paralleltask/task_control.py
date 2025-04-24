@@ -49,7 +49,7 @@ class Task(object):
 		self.shell = shell
 		self.convert_path = convert_path
 		self.run = None
-		self._jobs = [] if self.is_finished() else self._write_subtasks(self._init_subtasks(self._read_task()))
+		self._jobs = [] if self.is_finished() else self._write_subtasks(self._init_subtasks(self._read_task()), input_files=self.TaskFiles)
 		self.TaskFiles = input_files_dict
 
 	def _read_task(self):
