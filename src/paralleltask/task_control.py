@@ -40,7 +40,7 @@ class Job(object):
 class Task(object):
 
 	def __init__(self, path, group=1, max_subtask=300, job_prefix='subjob', dir_prefix='work', \
-			shell='/bin/bash', convert_path=True):
+			shell='/bin/bash', convert_path=True, input_files_dict=None):
 		self.job = Job(path)
 		self.group = group
 		self.max_subtask = max_subtask
@@ -50,6 +50,7 @@ class Task(object):
 		self.convert_path = convert_path
 		self.run = None
 		self._jobs = [] if self.is_finished() else self._write_subtasks(self._init_subtasks(self._read_task()))
+		self.TaskFiles = input_files_dict
 
 	def _read_task(self):
 		tasks = []
@@ -141,13 +142,18 @@ class Task(object):
 			if not os.path.exists(subtask_finish_lable):
 				pmkdir(subtask_dir)
 				subtask = "#!%s\nset -xveo pipefail\nhostname\ncd %s\n" % (self.shell, subtask_dir)
+				matched_input_set = set()
 				for task in tasks[i]:
 					subtask += "( %s %s )\n" % (time, task)
+					if task in self.TaskFiles:
+						for f in self.TaskFiles[task].split(','):
+							matched_input_set.add(f.strip())
+				matched_input_files = ",".join(sorted(matched_input_set)) if matched_input_set else None
 				subtask += "touch %s/%s.done\n" % (subtask_dir, subtask_file)
 				with open(subtask_dir + '/' + subtask_file, 'w') as OUT:
 					print (subtask, file=OUT)
 					os.chmod(subtask_dir + '/' + subtask_file, 0o744)
-			jobs.append(Job(subtask_dir + '/' + subtask_file, input_files=input_files))
+			jobs.append(Job(subtask_dir + '/' + subtask_file, input_files=matched_input_files))
 		return jobs
 
 	@property
